@@ -30,8 +30,8 @@ public interface IProductRepository
     void RemoveSupplierLinks(IEnumerable<ProductSupplier> links);
     Task SaveChangesAsync();
 
-    //Lab 5.2
-    Task<IEnumerable<Product>> SearchAsync(string? name, decimal? minPrice, decimal? maxPrice, int? idCategory);
+    //Recibe el DTO de búsqueda y devuelve la página + el total de registros del filtro
+    Task<(IEnumerable<Product> Items, int TotalRecords)> SearchAsync(ProductSearchDto search);
 
     Task<bool> ExistsByNameAsync(string productName, int? excludeId = null);
 

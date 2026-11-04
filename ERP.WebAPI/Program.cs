@@ -68,7 +68,21 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();   // obligatorio para usar UseExceptionHandler() sin parámetros
 
 
-builder.Services.AddOpenApi();
+// Documento OpenAPI con título, versión y descripción (clase 6-2)
+builder.Services.AddOpenApi(options =>
+{
+options.AddDocumentTransformer((document, context, cancellationToken) =>
+{
+document.Info = new()
+{
+    Title = "ERP API",
+    Version = "v1",
+    Description = "API del sistema ERP (ISW-621, UTN). Todas las respuestas usan Result<T>: isSuccess, status, title, detail y data."
+    };
+    return Task.CompletedTask;
+    });
+});
+
 
 var adminPassword = builder.Configuration["Seed:AdminPassword"]
     ?? throw new InvalidOperationException(
@@ -171,7 +185,9 @@ app.UseExceptionHandler();        // 2. Todo lo que viene después queda protegi
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarApiReference(options => options
+    .WithTitle("ERP API")
+    .WithDefaultHttpClient(ScalarTarget.JavaScript, ScalarClient.Fetch)); // ejemplos de consumo en JavaScript
 }
 
 app.UseAuthorization();
