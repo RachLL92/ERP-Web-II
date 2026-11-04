@@ -122,5 +122,11 @@ public static class MapsterConfig
         .Map(dest => dest.Image, src => src.Image ?? string.Empty);
         //Image ?? string.Empty: si el cliente no envía imagen, se guarda una cadena vacía en lugar de null.
 
+        // =====================================================================
+        // InvoiceCreateDto → Invoice (solo el encabezado; las líneas las arma el servicio)
+        // =====================================================================
+        TypeAdapterConfig<InvoiceCreateDto, Invoice>
+            .NewConfig()
+            .Ignore(dest => dest.InvoiceItems);
     }
 }

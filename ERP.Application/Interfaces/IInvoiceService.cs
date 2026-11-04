@@ -1,12 +1,18 @@
 ﻿using ERP.Domain.DTO;
+using ERP.Domain.DTO.PatternResult;
 
 namespace ERP.Application.Interfaces;
 
 public interface IInvoiceService
 {
-    Task<InvoiceDetailDto?> GetByIdAsync(int id);
+    // Consultas: ADAPTADAS a Result<T>
+    Task<Result<InvoiceDetailDto>> GetByIdAsync(int id);
+    Task<Result<IEnumerable<InvoiceDetailDto>>> GetByCustomerAsync(string idCustomer);
+    Task<Result<IEnumerable<InvoiceItemDto>>> GetLinesAsync(int idInvoice);
 
-    Task<IEnumerable<InvoiceDetailDto>> GetByCustomerAsync(string idCustomer);
+    // NUEVO proceso de negocio
+    Task<Result<InvoiceDetailDto>> RegisterAsync(InvoiceCreateDto invoice);
 
-    Task<IEnumerable<InvoiceItemDto>> GetLinesAsync(int idInvoice);
+    // RETO anular factura
+    Task<Result<InvoiceDetailDto>> VoidAsync(int id);
 }
