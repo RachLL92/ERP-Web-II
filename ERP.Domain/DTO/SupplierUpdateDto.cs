@@ -6,6 +6,7 @@ public record class SupplierUpdateDto
 {
     [Required(ErrorMessage = "El nombre del proveedor es obligatorio.")]
     [StringLength(100, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 100 caracteres.")]
+    [RegularExpression(@"^[^<>]*$", ErrorMessage = "No se permiten los caracteres < y >.")]
     public string? SupplierName { get; set; }
 
     [Required(ErrorMessage = "La cédula jurídica es obligatoria.")]
@@ -20,6 +21,7 @@ public record class SupplierUpdateDto
     public string? Email { get; set; }
 
     [StringLength(200, ErrorMessage = "La dirección no puede superar 200 caracteres.")]
+    [RegularExpression(@"^[^<>]*$", ErrorMessage = "No se permiten los caracteres < y >.")]
     public string? Address { get; set; }
 
     public bool Status { get; set; }
