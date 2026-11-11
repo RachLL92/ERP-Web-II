@@ -6,14 +6,18 @@ using ERP.Infraestructure.Data;
 using ERP.Infraestructure.Data.Seed;
 using ERP.Infraestructure.Implementation;
 using ERP.Infraestructure.Interfaces;
+using ERP.WebAPI.Handlers;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
-using ERP.WebAPI.Handlers;
 using Serilog;
 using Serilog.Events;
+using System.Text;
 
 
 
@@ -74,9 +78,59 @@ builder.Services.AddCors(options =>
  options.AddPolicy("Frontend", policy => policy
  .WithOrigins(allowedOrigins) // orígenes desde la configuración, no desde el código
  .WithMethods("GET", "POST", "PUT", "DELETE") // solo los verbos que usa la API
- .WithHeaders("Content-Type") // en 9-1 se agregará "Authorization"
+ .WithHeaders("Content-Type", "Authorization") //React enviará el token en este header
  .WithExposedHeaders("Location") // React podrá leer el Location de un 201
  .SetPreflightMaxAge(TimeSpan.FromMinutes(10)))); // el navegador recuerda el permiso 10 min
+
+// Configuración del JWT: la llave es un secreto (user-secrets), el resto va en appsettings.json
+var jwtKey = builder.Configuration["Jwt:Key"]
+ ?? throw new InvalidOperationException("Falta el secreto Jwt:Key. Configúrelo con dotnet user-secrets.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
+var jwtAudience = builder.Configuration["Jwt:Audience"]!;
+var jwtMinutes = builder.Configuration.GetValue<int>("Jwt:ExpirationMinutes");
+
+// Servicios del login
+builder.Services.AddSingleton<IJwtTokenService>(new JwtTokenService(jwtKey, jwtIssuer,
+jwtAudience, jwtMinutes));
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+// Authentication: cómo se valida el token que llega en cada petición
+builder.Services
+ .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+ .AddJwtBearer(options =>
+ {
+ options.MapInboundClaims = false; // los claims se leen con su nombre corto: sub, name, role
+ options.TokenValidationParameters = new TokenValidationParameters
+ {
+     ValidateIssuer = true,
+     ValidIssuer = jwtIssuer,
+     ValidateAudience = true,
+     ValidAudience = jwtAudience,
+     ValidateIssuerSigningKey = true,
+     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+     ValidateLifetime = true,
+     ClockSkew = TimeSpan.Zero, // vence exactamente en exp (por defecto tolera 5 minutos)
+     NameClaimType = "name",
+     RoleClaimType = "role" // la siguiente clase lo usa en [Authorize(Roles = "...")]
+    };
+ });
+
+// RETO 9-1 -- Máximo 5 intentos de login por minuto
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        var result = Result<object>.Failure(429, "Too Many Requests", "Demasiados intentos. Espere un minuto.");
+        await context.HttpContext.Response.WriteAsJsonAsync(result, token);
+    };
+    options.AddFixedWindowLimiter("login", limiter =>
+    {
+        limiter.PermitLimit = 5;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+    });
+});
 
 // Manejo global de errores (clase 6-1)
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -209,6 +263,7 @@ app.UseSerilogRequestLogging();   // 2. Una línea de log por petición
 app.UseExceptionHandler();        // 3. Excepciones con GlobalExceptionHandler
 app.UseStaticFiles();             // 4. Imágenes de productos (wwwroot)
 app.UseCors("Frontend");          // 5. NUEVO: aplica la política "Frontend"
+app.UseRateLimiter();             // 6. RETO 9-1: aplica el límite "login"
 
 // =====================================================
 // Configure HTTP request pipeline
@@ -223,8 +278,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthorization();
-
+app.UseAuthentication(); // NUEVO: lee el header Authorization, valida el token y llena HttpContext.User
+app.UseAuthorization();  // ya existía; en la siguiente clase decide quién puede entrar a cada endpoint
 app.MapControllers();
 
 app.Run();
