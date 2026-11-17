@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Infraestructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261111010902_InitialCreate")]
+    [Migration("20261117174902_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -516,7 +516,7 @@ namespace ERP.Infraestructure.Migrations
                         new
                         {
                             IdRole = 3,
-                            RoleName = "Cliente"
+                            RoleName = "Cajero"
                         });
                 });
 

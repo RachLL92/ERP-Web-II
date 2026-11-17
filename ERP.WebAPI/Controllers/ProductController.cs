@@ -1,6 +1,7 @@
 ﻿using ERP.Application.Interfaces;
 using ERP.Domain.DTO;
 using ERP.Domain.DTO.PatternResult;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
 namespace ERP.WebAPI.Controllers;
@@ -12,6 +13,9 @@ namespace ERP.WebAPI.Controllers;
 [ApiController]
 [Produces("application/json")]
 [ProducesResponseType<Result<object>>(StatusCodes.Status500InternalServerError)]
+[Authorize(Policy = AuthorizationPolicies.ProductManagers)]   // Administrador o Vendedor
+[ProducesResponseType<Result<object>>(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType<Result<object>>(StatusCodes.Status403Forbidden)]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _service;

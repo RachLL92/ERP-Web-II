@@ -298,7 +298,7 @@ namespace ERP.Infraestructure.Data.Seed
 
             {
                 IdRole = 3,
-                RoleName = "Cliente",
+                RoleName = "Cajero",
 
             }
             );

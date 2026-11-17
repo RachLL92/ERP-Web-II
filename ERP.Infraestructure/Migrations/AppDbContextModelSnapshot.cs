@@ -513,7 +513,7 @@ namespace ERP.Infraestructure.Migrations
                         new
                         {
                             IdRole = 3,
-                            RoleName = "Cliente"
+                            RoleName = "Cajero"
                         });
                 });
 

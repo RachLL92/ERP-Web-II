@@ -380,7 +380,7 @@ namespace ERP.Infraestructure.Migrations
                 {
                     { 1, "Administrador" },
                     { 2, "Vendedor" },
-                    { 3, "Cliente" }
+                    { 3, "Cajero" }
                 });
 
             migrationBuilder.InsertData(
